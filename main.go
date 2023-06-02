@@ -72,9 +72,15 @@ func run() error {
 		log.Printf("failed to remove work dir: %v", err)
 	}()
 
+	if *verbose {
+		log.Printf("download %s", src.String())
+	}
 	zipPath, err := download(ctx, gcs, workDir, src)
 	if err != nil {
 		return fmt.Errorf("download zip: %w", err)
+	}
+	if *verbose {
+		log.Printf("download finished: -> %s", zipPath)
 	}
 
 	bucket := gcs.Bucket(dest.Hostname())
