@@ -1,4 +1,4 @@
-module github.com/orisano/gcs-upload
+module github.com/orisano/gcs-unzip
 
 go 1.20
 
