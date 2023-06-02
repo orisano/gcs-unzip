@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -130,6 +131,9 @@ func run() error {
 		var w io.Writer
 		var closeWriter func() error
 		if useGzip[filepath.Ext(f)] {
+			if sniff, err := io.ReadAll(io.NewSectionReader(r, 0, 512)); err == nil {
+				ow.ContentType = http.DetectContentType(sniff)
+			}
 			ow.ContentEncoding = "gzip"
 			gw := gzipWriterPool.Get().(*gzip.Writer)
 			defer gzipWriterPool.Put(gw)
