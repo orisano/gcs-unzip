@@ -149,7 +149,12 @@ func run() error {
 
 	var largestFile string
 	var largestSize uint64
+	filesCount := 0
 	for i := 0; i < extractor.Files(); i++ {
+		if extractor.IsDir(i) {
+			continue
+		}
+		filesCount++
 		size := extractor.FileSize(i)
 		if largestSize < size {
 			largestFile = extractor.FileName(i)
@@ -162,21 +167,29 @@ func run() error {
 	}
 
 	uploadGroup, ctx := errgroup.WithContext(ctx)
-	uploadGroup.SetLimit(*n)
-
-	writeBuf := make([]byte, 1*1024*1024)
+	uploadGroup.SetLimit(*n + 1)
 	diskSem := semaphore.NewWeighted(int64(*diskLimit))
 
 	type uploadJob struct {
 		name string
 		size int64
 	}
-	uploadJobCh := make(chan uploadJob, 4096)
+	uploadJobCh := make(chan uploadJob, filesCount)
 
-	go func() {
-		for job := range uploadJobCh {
-			size := job.size
-			name := job.name
+	uploadGroup.Go(func() error {
+		for {
+			var size int64
+			var name string
+			select {
+			case <-ctx.Done():
+				return nil
+			case job, ok := <-uploadJobCh:
+				if !ok {
+					return nil
+				}
+				size = job.size
+				name = job.name
+			}
 			uploadGroup.Go(func() error {
 				defer diskSem.Release(size)
 				defer func() {
@@ -188,8 +201,9 @@ func run() error {
 				return upload(ctx, name)
 			})
 		}
-	}()
-
+	})
+	
+	writeBuf := make([]byte, 1*1024*1024)
 	for i := 0; i < extractor.Files(); i++ {
 		name := extractor.FileName(i)
 		if extractor.IsDir(i) {
