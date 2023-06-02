@@ -121,7 +121,8 @@ func run() error {
 		if *verbose {
 			start = time.Now()
 		}
-		if _, err := io.CopyBuffer(w, r, buf); err != nil {
+		uploaded, err := io.CopyBuffer(w, r, buf)
+		if err != nil {
 			return fmt.Errorf("upload: %w", err)
 		}
 		if err := w.Close(); err != nil {
@@ -132,7 +133,8 @@ func run() error {
 			runtime.GC()
 		}
 		if *verbose {
-			log.Printf("%7d: -> %s: %s", c, "gs://"+path.Join(o.BucketName(), o.ObjectName()), time.Now().Sub(start))
+			bv := bytesValue(uploaded)
+			log.Printf("%7d: -> %s(%s): %s", c, "gs://"+path.Join(o.BucketName(), o.ObjectName()), bv.String(), time.Now().Sub(start))
 		}
 		return nil
 	}
@@ -165,6 +167,10 @@ func run() error {
 	if *diskLimit < largestSize {
 		bv := bytesValue(largestSize)
 		return fmt.Errorf("no enough space(%s): %s", largestFile, bv.String())
+	}
+
+	if *verbose {
+		log.Printf("files: %d", filesCount)
 	}
 
 	uploadGroup, ctx := errgroup.WithContext(ctx)
