@@ -167,26 +167,32 @@ func run() error {
 	writeBuf := make([]byte, 1*1024*1024)
 	diskSem := semaphore.NewWeighted(int64(*diskLimit))
 	for i := 0; i < extractor.Files(); i++ {
+		name := extractor.FileName(i)
+		if extractor.IsDir(i) {
+			if err := os.Mkdir(filepath.Join(workDir, name), 0700); err != nil {
+				return fmt.Errorf("mkdir: %w", err)
+			}
+			continue
+		}
+
 		size := int64(extractor.FileSize(i))
 		if err := diskSem.Acquire(ctx, size); err != nil {
 			return fmt.Errorf("acquire disk sem: %w", err)
 		}
 
-		if err := writeTemporary(extractor, i, workDir, writeBuf); err != nil {
+		if err := writeTemporary(extractor, name, workDir, writeBuf); err != nil {
 			return fmt.Errorf("write temp: %w", err)
 		}
-
-		f := extractor.FileName(i)
 
 		uploadGroup.Go(func() error {
 			defer diskSem.Release(size)
 			defer func() {
-				err := os.Remove(filepath.Join(workDir, f))
+				err := os.Remove(filepath.Join(workDir, name))
 				if err != nil {
 					log.Printf("failed to remove temp file: %v", err)
 				}
 			}()
-			return upload(ctx, f)
+			return upload(ctx, name)
 		})
 	}
 	if err := uploadGroup.Wait(); err != nil {
@@ -285,18 +291,14 @@ func download(ctx context.Context, gcs *storage.Client, workDir string, src *url
 	return p, nil
 }
 
-func writeTemporary(e Extractor, i int, workDir string, buf []byte) error {
-	name := e.FileName(i)
-	rc, err := e.Open(i)
+func writeTemporary(e Extractor, name, workDir string, buf []byte) error {
+	rc, err := e.Open(name)
 	if err != nil {
 		return fmt.Errorf("open zip entry(%s): %w", name, err)
 	}
 	defer rc.Close()
 
-	if err := os.MkdirAll(filepath.Join(workDir, filepath.Dir(name)), 0700); err != nil {
-		return fmt.Errorf("mkdir: %w", err)
-	}
-	f, err := os.Create(name)
+	f, err := os.Create(filepath.Join(workDir, name))
 	if err != nil {
 		return fmt.Errorf("create: %w", err)
 	}

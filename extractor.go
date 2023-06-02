@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -14,7 +15,8 @@ type Extractor interface {
 	Files() int
 	FileName(int) string
 	FileSize(int) uint64
-	Open(int) (io.ReadCloser, error)
+	IsDir(int) bool
+	Open(string) (io.ReadCloser, error)
 }
 
 func NewExtractor(f *os.File) (Extractor, error) {
@@ -56,8 +58,12 @@ func (e *zipExtractor) FileSize(i int) uint64 {
 	return e.zr.File[i].UncompressedSize64
 }
 
-func (e *zipExtractor) Open(i int) (io.ReadCloser, error) {
-	return e.zr.Open(e.zr.File[i].Name)
+func (e *zipExtractor) IsDir(i int) bool {
+	return e.zr.File[i].Mode()&fs.ModeDir != 0
+}
+
+func (e *zipExtractor) Open(name string) (io.ReadCloser, error) {
+	return e.zr.Open(name)
 }
 
 type sevenZipExtractor struct {
@@ -76,6 +82,10 @@ func (e *sevenZipExtractor) FileSize(i int) uint64 {
 	return e.zr.File[i].UncompressedSize
 }
 
-func (e *sevenZipExtractor) Open(i int) (io.ReadCloser, error) {
-	return e.zr.Open(e.zr.File[i].Name)
+func (e *sevenZipExtractor) IsDir(i int) bool {
+	return e.zr.File[i].Mode()&fs.ModeDir != 0
+}
+
+func (e *sevenZipExtractor) Open(name string) (io.ReadCloser, error) {
+	return e.zr.Open(name)
 }
