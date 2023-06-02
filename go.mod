@@ -4,6 +4,8 @@ go 1.20
 
 require (
 	cloud.google.com/go/storage v1.30.1
+	github.com/bodgit/sevenzip v1.4.2
+	github.com/klauspost/compress v1.16.5
 	golang.org/x/sync v0.2.0
 )
 
@@ -14,7 +16,6 @@ require (
 	cloud.google.com/go/iam v1.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/bodgit/plumbing v1.3.0 // indirect
-	github.com/bodgit/sevenzip v1.4.2 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -25,7 +26,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
