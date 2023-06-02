@@ -34,6 +34,7 @@ func run() error {
 	chunkSize := flagBytes("chunk", 16*1024*1024, "upload chunk size")
 	gcInterval := flag.Int("gc", 0, "gc interval")
 	diskLimit := flagBytes("disk-limit", 50*1024*1024*1024, "disk limit")
+	tmpDir := flag.String("tmp-dir", "", "temporary directory")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -63,7 +64,7 @@ func run() error {
 		return fmt.Errorf("storage client: %w", err)
 	}
 
-	workDir, err := os.MkdirTemp("", "")
+	workDir, err := os.MkdirTemp(*tmpDir, "")
 	if err != nil {
 		return fmt.Errorf("make work dir: %w", err)
 	}
@@ -202,7 +203,7 @@ func run() error {
 			})
 		}
 	})
-	
+
 	writeBuf := make([]byte, 1*1024*1024)
 	for i := 0; i < extractor.Files(); i++ {
 		name := extractor.FileName(i)
