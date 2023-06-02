@@ -69,7 +69,9 @@ func run() error {
 	}
 	defer func() {
 		err := os.RemoveAll(workDir)
-		log.Printf("failed to remove work dir: %v", err)
+		if err != nil {
+			log.Printf("failed to remove work dir: %v", err)
+		}
 	}()
 
 	if *verbose {
