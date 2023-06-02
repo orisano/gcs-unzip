@@ -150,7 +150,7 @@ func run() error {
 	}
 	if *diskLimit < largestSize {
 		bv := bytesValue(largestSize)
-		return fmt.Errorf("has no enough space(%s): %s", largestFile, bv.String())
+		return fmt.Errorf("no enough space(%s): %s", largestFile, bv.String())
 	}
 
 	uploadGroup, ctx := errgroup.WithContext(ctx)
