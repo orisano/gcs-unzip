@@ -244,7 +244,13 @@ func run() error {
 	})
 
 	writeBuf := make([]byte, 1*1024*1024)
+FILES:
 	for i := 0; i < extractor.Files(); i++ {
+		select {
+		case <-ctx.Done():
+			break FILES
+		default:
+		}
 		name := extractor.FileName(i)
 		if extractor.IsDir(i) {
 			if err := os.Mkdir(filepath.Join(workDir, name), 0700); err != nil {
