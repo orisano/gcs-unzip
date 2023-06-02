@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/klauspost/compress/gzip"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
@@ -35,6 +36,7 @@ func run() error {
 	gcInterval := flag.Int("gc", 0, "gc interval")
 	diskLimit := flagBytes("disk-limit", 50*1024*1024*1024, "disk limit")
 	tmpDir := flag.String("tmp-dir", "", "temporary directory")
+	gzipExt := flag.String("gzip-ext", "", "gzip extensions")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -93,6 +95,17 @@ func run() error {
 			return make([]byte, *bufSize)
 		},
 	}
+	useGzip := map[string]bool{}
+	if *gzipExt != "" {
+		for _, ext := range strings.Split(*gzipExt, ",") {
+			useGzip["."+ext] = true
+		}
+	}
+	gzipWriterPool := sync.Pool{
+		New: func() any {
+			return &gzip.Writer{}
+		},
+	}
 	var count atomic.Int64
 	uploadsStart := time.Now()
 
@@ -110,9 +123,29 @@ func run() error {
 
 		name := path.Join(dest.Path[1:], filepath.ToSlash(f))
 		o := bucket.Object(name).Retryer(storage.WithPolicy(storage.RetryAlways))
-		w := o.NewWriter(ctx)
-		w.ChunkSize = int(*chunkSize)
-		defer w.Close()
+		ow := o.NewWriter(ctx)
+		ow.ChunkSize = int(*chunkSize)
+		defer ow.Close()
+
+		var w io.Writer
+		var closeWriter func() error
+		if useGzip[filepath.Ext(f)] {
+			ow.ContentEncoding = "gzip"
+			gw := gzipWriterPool.Get().(*gzip.Writer)
+			defer gzipWriterPool.Put(gw)
+			gw.Reset(ow)
+
+			closeWriter = func() error {
+				if err := gw.Close(); err != nil {
+					return err
+				}
+				return ow.Close()
+			}
+			w = gw
+		} else {
+			closeWriter = ow.Close
+			w = ow
+		}
 
 		buf := uploadBufPool.Get().([]byte)
 		defer uploadBufPool.Put(buf)
@@ -125,7 +158,7 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("upload: %w", err)
 		}
-		if err := w.Close(); err != nil {
+		if err := closeWriter(); err != nil {
 			return fmt.Errorf("close writer: %w", err)
 		}
 		c := count.Add(1)
