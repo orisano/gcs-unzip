@@ -166,6 +166,30 @@ func run() error {
 
 	writeBuf := make([]byte, 1*1024*1024)
 	diskSem := semaphore.NewWeighted(int64(*diskLimit))
+
+	type uploadJob struct {
+		name string
+		size int64
+	}
+	uploadJobCh := make(chan uploadJob, 4096)
+
+	go func() {
+		for job := range uploadJobCh {
+			size := job.size
+			name := job.name
+			uploadGroup.Go(func() error {
+				defer diskSem.Release(size)
+				defer func() {
+					err := os.Remove(filepath.Join(workDir, name))
+					if err != nil {
+						log.Printf("failed to remove temp file: %v", err)
+					}
+				}()
+				return upload(ctx, name)
+			})
+		}
+	}()
+
 	for i := 0; i < extractor.Files(); i++ {
 		name := extractor.FileName(i)
 		if extractor.IsDir(i) {
@@ -183,18 +207,10 @@ func run() error {
 		if err := writeTemporary(extractor, name, workDir, writeBuf); err != nil {
 			return fmt.Errorf("write temp: %w", err)
 		}
-
-		uploadGroup.Go(func() error {
-			defer diskSem.Release(size)
-			defer func() {
-				err := os.Remove(filepath.Join(workDir, name))
-				if err != nil {
-					log.Printf("failed to remove temp file: %v", err)
-				}
-			}()
-			return upload(ctx, name)
-		})
+		uploadJobCh <- uploadJob{name: name, size: size}
 	}
+	close(uploadJobCh)
+
 	if err := uploadGroup.Wait(); err != nil {
 		return fmt.Errorf("uploads: %w", err)
 	}
