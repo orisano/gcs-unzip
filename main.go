@@ -103,7 +103,7 @@ func run() error {
 	}
 	gzipWriterPool := sync.Pool{
 		New: func() any {
-			return &gzip.Writer{}
+			return gzip.NewWriter(io.Discard)
 		},
 	}
 	var count atomic.Int64
