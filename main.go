@@ -37,7 +37,7 @@ func run() error {
 	gcInterval := flag.Int("gc", 0, "gc interval")
 	diskLimit := flagBytes("disk-limit", 50*1024*1024*1024, "disk limit")
 	tmpDir := flag.String("tmp-dir", "", "temporary directory")
-	gzipExt := flag.String("gzip-ext", "", "gzip extensions")
+	gzipExt := flag.String("gzip-ext", "", "comma-separated list of file extensions to gzip before uploading")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -170,8 +170,7 @@ func run() error {
 			runtime.GC()
 		}
 		if *verbose {
-			bv := bytesValue(uploaded)
-			log.Printf("%7d: -> %s(%s): %s", c, "gs://"+path.Join(o.BucketName(), o.ObjectName()), bv.String(), time.Now().Sub(start))
+			log.Printf("%7d: -> %s(%s): %s", c, "gs://"+path.Join(o.BucketName(), o.ObjectName()), bytesString(uint64(uploaded)), time.Now().Sub(start))
 		}
 		return nil
 	}
@@ -202,8 +201,7 @@ func run() error {
 		}
 	}
 	if *diskLimit < largestSize {
-		bv := bytesValue(largestSize)
-		return fmt.Errorf("no enough space(%s): %s", largestFile, bv.String())
+		return fmt.Errorf("no enough space(%s): %s", largestFile, bytesString(largestSize))
 	}
 
 	if *verbose {
@@ -247,7 +245,6 @@ func run() error {
 		}
 	})
 
-	writeBuf := make([]byte, 1*1024*1024)
 FILES:
 	for i := 0; i < extractor.Files(); i++ {
 		select {
@@ -262,13 +259,12 @@ FILES:
 			}
 			continue
 		}
-
 		size := int64(extractor.FileSize(i))
 		if err := diskSem.Acquire(ctx, size); err != nil {
 			return fmt.Errorf("acquire disk sem: %w", err)
 		}
 
-		if err := writeTemporary(extractor, name, workDir, writeBuf); err != nil {
+		if err := writeTemporary(ctx, extractor, name, workDir); err != nil {
 			return fmt.Errorf("write temp: %w", err)
 		}
 		uploadJobCh <- uploadJob{name: name, size: size}
@@ -337,6 +333,11 @@ func (b *bytesValue) Set(s string) error {
 	panic("unreachable")
 }
 
+func bytesString(x uint64) string {
+	bv := bytesValue(x)
+	return bv.String()
+}
+
 func parseGSURL(s string) (*url.URL, error) {
 	u, err := url.ParseRequestURI(s)
 	if err != nil {
@@ -371,7 +372,7 @@ func download(ctx context.Context, gcs *storage.Client, workDir string, src *url
 	return p, nil
 }
 
-func writeTemporary(e Extractor, name, workDir string, buf []byte) error {
+func writeTemporary(ctx context.Context, e Extractor, name, workDir string) error {
 	rc, err := e.Open(name)
 	if err != nil {
 		return fmt.Errorf("open zip entry(%s): %w", name, err)
@@ -384,7 +385,7 @@ func writeTemporary(e Extractor, name, workDir string, buf []byte) error {
 	}
 	defer f.Close()
 
-	if _, err := io.CopyBuffer(f, rc, buf); err != nil {
+	if _, err := io.Copy(f, rc); err != nil {
 		return fmt.Errorf("copy: %w", err)
 	}
 	if err := f.Close(); err != nil {
