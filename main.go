@@ -55,7 +55,7 @@ func run() error {
 		return fmt.Errorf("parse dest: %w", err)
 	}
 
-	switch ext := path.Ext(src.Path); ext {
+	switch ext := path.Ext(src.Path); strings.ToLower(ext) {
 	case ".7z", ".zip":
 	default:
 		return fmt.Errorf("unsupported format: %s", ext)
@@ -99,7 +99,7 @@ func run() error {
 	useGzip := map[string]bool{}
 	if *gzipExt != "" {
 		for _, ext := range strings.Split(*gzipExt, ",") {
-			useGzip["."+ext] = true
+			useGzip["."+strings.ToLower(ext)] = true
 		}
 	}
 	gzipWriterPool := sync.Pool{
@@ -130,7 +130,7 @@ func run() error {
 
 		var w io.Writer
 		var closeWriter func() error
-		if useGzip[filepath.Ext(f)] {
+		if useGzip[strings.ToLower(filepath.Ext(f))] {
 			if sniff, err := io.ReadAll(io.NewSectionReader(r, 0, 512)); err == nil {
 				ow.ContentType = http.DetectContentType(sniff)
 			}
