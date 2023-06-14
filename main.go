@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"net/url"
@@ -379,7 +381,14 @@ func writeTemporary(ctx context.Context, e Extractor, name, workDir string) erro
 	}
 	defer rc.Close()
 
-	f, err := os.Create(filepath.Join(workDir, name))
+	tmpFile := filepath.Join(workDir, name)
+	f, err := os.Create(tmpFile)
+	if errors.Is(err, fs.ErrNotExist) {
+		if err := os.MkdirAll(filepath.Dir(tmpFile), 0700); err != nil {
+			return fmt.Errorf("mkdir all: %w", err)
+		}
+		f, err = os.Create(tmpFile)
+	}
 	if err != nil {
 		return fmt.Errorf("create: %w", err)
 	}
