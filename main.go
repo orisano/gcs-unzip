@@ -256,7 +256,7 @@ FILES:
 		}
 		name := extractor.FileName(i)
 		if extractor.IsDir(i) {
-			if err := os.Mkdir(filepath.Join(workDir, name), 0700); err != nil {
+			if err := os.MkdirAll(filepath.Join(workDir, name), 0700); err != nil {
 				return fmt.Errorf("mkdir: %w", err)
 			}
 			continue
