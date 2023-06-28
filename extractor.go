@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/bodgit/sevenzip"
 	"github.com/klauspost/compress/zip"
+	"golang.org/x/text/encoding/japanese"
 )
 
 type Extractor interface {
@@ -53,7 +55,7 @@ func (e *zipExtractor) Files() int {
 }
 
 func (e *zipExtractor) FileName(i int) string {
-	return filepath.Join(e.dir, filepath.FromSlash(e.zr.File[i].Name))
+	return filepath.Join(e.dir, filepath.FromSlash(fallbackShiftJIS(e.zr.File[i].Name)))
 }
 
 func (e *zipExtractor) FileSize(i int) uint64 {
@@ -81,7 +83,7 @@ func (e *sevenZipExtractor) Files() int {
 }
 
 func (e *sevenZipExtractor) FileName(i int) string {
-	return filepath.FromSlash(e.zr.File[i].Name)
+	return filepath.FromSlash(fallbackShiftJIS(e.zr.File[i].Name))
 }
 
 func (e *sevenZipExtractor) FileSize(i int) uint64 {
@@ -94,4 +96,14 @@ func (e *sevenZipExtractor) IsDir(i int) bool {
 
 func (e *sevenZipExtractor) Open(name string) (io.ReadCloser, error) {
 	return e.zr.Open(name)
+}
+
+func fallbackShiftJIS(s string) string {
+	if !utf8.ValidString(s) {
+		d, err := japanese.ShiftJIS.NewDecoder().String(s)
+		if err == nil {
+			return d
+		}
+	}
+	return s
 }
