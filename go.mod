@@ -4,10 +4,10 @@ go 1.20
 
 require (
 	cloud.google.com/go/storage v1.31.0
-	github.com/bodgit/sevenzip v1.4.2
-	github.com/klauspost/compress v1.16.6
+	github.com/bodgit/sevenzip v1.4.3
+	github.com/klauspost/compress v1.16.7
 	golang.org/x/sync v0.3.0
-	golang.org/x/text v0.10.0
+	golang.org/x/text v0.11.0
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/oauth2 v0.9.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.129.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -44,3 +44,5 @@ require (
 	google.golang.org/grpc v1.56.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
+
+replace github.com/ulikunitz/xz => github.com/orisano/xz v0.5.12-0.20230706205800-4b4c5979f5e5
