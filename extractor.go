@@ -19,7 +19,7 @@ type Extractor interface {
 	FileName(int) string
 	FileSize(int) uint64
 	IsDir(int) bool
-	Open(string) (io.ReadCloser, error)
+	Open(int) (io.ReadCloser, error)
 }
 
 func NewExtractor(f *os.File) (Extractor, error) {
@@ -66,12 +66,8 @@ func (e *zipExtractor) IsDir(i int) bool {
 	return e.zr.File[i].Mode()&fs.ModeDir != 0
 }
 
-func (e *zipExtractor) Open(name string) (io.ReadCloser, error) {
-	if name, found := strings.CutPrefix(name, e.dir+string(filepath.Separator)); found {
-		return e.zr.Open(name)
-	} else {
-		return nil, fs.ErrNotExist
-	}
+func (e *zipExtractor) Open(i int) (io.ReadCloser, error) {
+	return e.zr.File[i].Open()
 }
 
 type sevenZipExtractor struct {
@@ -94,8 +90,8 @@ func (e *sevenZipExtractor) IsDir(i int) bool {
 	return e.zr.File[i].Mode()&fs.ModeDir != 0
 }
 
-func (e *sevenZipExtractor) Open(name string) (io.ReadCloser, error) {
-	return e.zr.Open(name)
+func (e *sevenZipExtractor) Open(i int) (io.ReadCloser, error) {
+	return e.zr.File[i].Open()
 }
 
 func fallbackShiftJIS(s string) string {

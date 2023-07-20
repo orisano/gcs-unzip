@@ -266,7 +266,7 @@ FILES:
 			return fmt.Errorf("acquire disk sem: %w", err)
 		}
 
-		if err := writeTemporary(ctx, extractor, name, workDir); err != nil {
+		if err := writeTemporary(ctx, extractor, i, name, workDir); err != nil {
 			return fmt.Errorf("write temp: %w", err)
 		}
 		uploadJobCh <- uploadJob{name: name, size: size}
@@ -374,8 +374,8 @@ func download(ctx context.Context, gcs *storage.Client, workDir string, src *url
 	return p, nil
 }
 
-func writeTemporary(ctx context.Context, e Extractor, name, workDir string) error {
-	rc, err := e.Open(name)
+func writeTemporary(ctx context.Context, e Extractor, i int, name, workDir string) error {
+	rc, err := e.Open(i)
 	if err != nil {
 		return fmt.Errorf("open zip entry(%s): %w", name, err)
 	}
