@@ -40,7 +40,7 @@ func run() error {
 	diskLimit := flagBytes("disk-limit", 50*1024*1024*1024, "disk limit")
 	tmpDir := flag.String("tmp-dir", "", "temporary directory")
 	gzipExt := flag.String("gzip-ext", "", "comma-separated list of file extensions to gzip before uploading")
-	skipMeta := flag.Bool("skip-meta", false, "")
+	withMeta := flag.Bool("with-meta", false, "")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -196,13 +196,14 @@ func run() error {
 		if extractor.IsDir(i) {
 			continue
 		}
-		if *skipMeta && isIgnoreMeta(extractor.FileName(i)) {
+		name := extractor.FileName(i)
+		if !*withMeta && isIgnoreMeta(name) {
 			continue
 		}
 		filesCount++
 		size := extractor.FileSize(i)
 		if largestSize < size {
-			largestFile = extractor.FileName(i)
+			largestFile = name
 			largestSize = size
 		}
 	}
@@ -259,7 +260,7 @@ FILES:
 		default:
 		}
 		name := extractor.FileName(i)
-		if *skipMeta && isIgnoreMeta(extractor.FileName(i)) {
+		if !*withMeta && isIgnoreMeta(name) {
 			continue
 		}
 		if extractor.IsDir(i) {
