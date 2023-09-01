@@ -41,6 +41,7 @@ func run() error {
 	tmpDir := flag.String("tmp-dir", "", "temporary directory")
 	gzipExt := flag.String("gzip-ext", "", "comma-separated list of file extensions to gzip before uploading")
 	withMeta := flag.Bool("with-meta", false, "")
+	skipTop := flag.Bool("skip-top", false, "")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -184,6 +185,8 @@ func run() error {
 	}
 	defer zf.Close()
 
+	archiveName := trimExt(filepath.Base(zf.Name()))
+
 	extractor, err := NewExtractor(zf)
 	if err != nil {
 		return fmt.Errorf("extractor: %w", err)
@@ -192,6 +195,8 @@ func run() error {
 	var largestFile string
 	var largestSize uint64
 	filesCount := 0
+
+	topDirOnly := true
 	for i := 0; i < extractor.Files(); i++ {
 		if extractor.IsDir(i) {
 			continue
@@ -200,6 +205,13 @@ func run() error {
 		if !*withMeta && isIgnoreMeta(name) {
 			continue
 		}
+		if *skipTop && topDirOnly {
+			top, _, _ := strings.Cut(name, string(os.PathSeparator))
+			if top != archiveName {
+				topDirOnly = false
+			}
+		}
+
 		filesCount++
 		size := extractor.FileSize(i)
 		if largestSize < size {
@@ -262,6 +274,12 @@ FILES:
 		name := extractor.FileName(i)
 		if !*withMeta && isIgnoreMeta(name) {
 			continue
+		}
+		if *skipTop && topDirOnly {
+			name = strings.TrimPrefix(name, archiveName)
+			if name != "" {
+				name = name[1:]
+			}
 		}
 		if extractor.IsDir(i) {
 			if err := os.MkdirAll(filepath.Join(workDir, name), 0700); err != nil {
@@ -425,4 +443,8 @@ func isIgnoreMeta(name string) bool {
 		}
 	}
 	return false
+}
+
+func trimExt(name string) string {
+	return strings.TrimSuffix(name, filepath.Ext(name))
 }
