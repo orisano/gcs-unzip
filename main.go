@@ -40,6 +40,7 @@ func run() error {
 	diskLimit := flagBytes("disk-limit", 50*1024*1024*1024, "disk limit")
 	tmpDir := flag.String("tmp-dir", "", "temporary directory")
 	gzipExt := flag.String("gzip-ext", "", "comma-separated list of file extensions to gzip before uploading")
+	skipMeta := flag.Bool("skip-meta", false, "")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -195,6 +196,9 @@ func run() error {
 		if extractor.IsDir(i) {
 			continue
 		}
+		if *skipMeta && isIgnoreMeta(extractor.FileName(i)) {
+			continue
+		}
 		filesCount++
 		size := extractor.FileSize(i)
 		if largestSize < size {
@@ -255,6 +259,9 @@ FILES:
 		default:
 		}
 		name := extractor.FileName(i)
+		if *skipMeta && isIgnoreMeta(extractor.FileName(i)) {
+			continue
+		}
 		if extractor.IsDir(i) {
 			if err := os.MkdirAll(filepath.Join(workDir, name), 0700); err != nil {
 				return fmt.Errorf("mkdir: %w", err)
@@ -401,4 +408,20 @@ func writeTemporary(ctx context.Context, e Extractor, i int, name, workDir strin
 		return fmt.Errorf("close: %w", err)
 	}
 	return nil
+}
+
+func isIgnoreMeta(name string) bool {
+	rest := name
+	sep := string(os.PathListSeparator)
+	for rest != "" {
+		n, after, found := strings.Cut(rest, sep)
+		if !found {
+			return n == ".DS_Store" || n == "Thumbs.db"
+		}
+		rest = after
+		if n == "__MACOSX" {
+			return true
+		}
+	}
+	return false
 }
