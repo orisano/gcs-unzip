@@ -26,6 +26,8 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+const local = false
+
 func run() error {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage of gcs-unzip <src> <dest>:\n")
@@ -178,6 +180,12 @@ func run() error {
 		}
 		return nil
 	}
+	if local {
+		upload = func(ctx context.Context, f string) error {
+			log.Printf("-> %s", f)
+			return nil
+		}
+	}
 
 	zf, err := os.Open(zipPath)
 	if err != nil {
@@ -254,6 +262,9 @@ func run() error {
 			uploadGroup.Go(func() error {
 				defer diskSem.Release(size)
 				defer func() {
+					if local {
+						return
+					}
 					err := os.Remove(filepath.Join(workDir, name))
 					if err != nil {
 						log.Printf("failed to remove temp file: %v", err)
@@ -371,7 +382,9 @@ func parseGSURL(s string) (*url.URL, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse uri: %w", err)
 	}
-
+	if local {
+		return u, nil
+	}
 	if u.Scheme != "gs" {
 		return nil, fmt.Errorf("must start with gs://: %s", u.Scheme)
 	}
@@ -379,6 +392,9 @@ func parseGSURL(s string) (*url.URL, error) {
 }
 
 func download(ctx context.Context, gcs *storage.Client, workDir string, src *url.URL) (string, error) {
+	if local {
+		return strings.TrimPrefix(src.Path, "/"), nil
+	}
 	r, err := gcs.Bucket(src.Hostname()).Object(src.Path[1:]).NewReader(ctx)
 	if err != nil {
 		return "", fmt.Errorf("src reader: %w", err)
@@ -431,11 +447,11 @@ func writeTemporary(ctx context.Context, e Extractor, i int, name, workDir strin
 
 func isIgnoreMeta(name string) bool {
 	rest := name
-	sep := string(os.PathListSeparator)
+	sep := string(os.PathSeparator)
 	for rest != "" {
 		n, after, found := strings.Cut(rest, sep)
 		if !found {
-			return n == ".DS_Store" || n == "Thumbs.db"
+			return n == ".DS_Store" || n == "Thumbs.db" || n == "__MACOSX"
 		}
 		rest = after
 		if n == "__MACOSX" {
