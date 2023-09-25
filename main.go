@@ -292,6 +292,7 @@ FILES:
 				name = name[1:]
 			}
 		}
+		name = filepath.Join(archiveName, name)
 		if extractor.IsDir(i) {
 			if err := os.MkdirAll(filepath.Join(workDir, name), 0700); err != nil {
 				return fmt.Errorf("mkdir: %w", err)
