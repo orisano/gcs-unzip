@@ -44,6 +44,7 @@ func run() error {
 	gzipExt := flag.String("gzip-ext", "", "comma-separated list of file extensions to gzip before uploading")
 	withMeta := flag.Bool("with-meta", false, "")
 	skipTop := flag.Bool("skip-top", false, "")
+	oldWindows := flag.Bool("old-windows", false, "")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -195,7 +196,7 @@ func run() error {
 
 	archiveName := trimExt(filepath.Base(zf.Name()))
 
-	extractor, err := NewExtractor(zf)
+	extractor, err := NewExtractor(zf, *oldWindows)
 	if err != nil {
 		return fmt.Errorf("extractor: %w", err)
 	}

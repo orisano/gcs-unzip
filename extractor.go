@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/bodgit/sevenzip"
@@ -21,7 +22,7 @@ type Extractor interface {
 	Open(int) (io.ReadCloser, error)
 }
 
-func NewExtractor(f *os.File) (Extractor, error) {
+func NewExtractor(f *os.File, oldWindows bool) (Extractor, error) {
 	fi, err := f.Stat()
 	if err != nil {
 		return nil, fmt.Errorf("stat: %w", err)
@@ -38,14 +39,15 @@ func NewExtractor(f *os.File) (Extractor, error) {
 		if err != nil {
 			return nil, fmt.Errorf("zip: %w", err)
 		}
-		return &zipExtractor{zr: zr}, nil
+		return &zipExtractor{zr: zr, oldWindows: oldWindows}, nil
 	default:
 		panic("unreachable")
 	}
 }
 
 type zipExtractor struct {
-	zr *zip.Reader
+	zr         *zip.Reader
+	oldWindows bool
 }
 
 func (e *zipExtractor) Files() int {
@@ -53,7 +55,11 @@ func (e *zipExtractor) Files() int {
 }
 
 func (e *zipExtractor) FileName(i int) string {
-	return filepath.FromSlash(fallbackShiftJIS(e.zr.File[i].Name))
+	name := fallbackShiftJIS(e.zr.File[i].Name)
+	if e.oldWindows {
+		name = strings.ReplaceAll(name, "\\", "/")
+	}
+	return filepath.FromSlash(name)
 }
 
 func (e *zipExtractor) FileSize(i int) uint64 {
