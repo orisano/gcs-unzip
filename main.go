@@ -45,6 +45,7 @@ func run() error {
 	withMeta := flag.Bool("with-meta", false, "")
 	skipTop := flag.Bool("skip-top", false, "")
 	oldWindows := flag.Bool("old-windows", false, "")
+	gcsMetadata := flag.String("gcs-meta", "", "metadata (comma separated key=value pairs)")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -109,6 +110,15 @@ func run() error {
 			useGzip["."+strings.ToLower(ext)] = true
 		}
 	}
+	var metadata map[string]string
+	if *gcsMetadata != "" {
+		metadata = map[string]string{}
+		for _, kv := range strings.Split(*gcsMetadata, ",") {
+			k, v, _ := strings.Cut(kv, "=")
+			metadata[k] = v
+		}
+	}
+
 	gzipWriterPool := sync.Pool{
 		New: func() any {
 			return gzip.NewWriter(io.Discard)
@@ -133,6 +143,9 @@ func run() error {
 		o := bucket.Object(name).Retryer(storage.WithPolicy(storage.RetryAlways))
 		ow := o.NewWriter(ctx)
 		ow.ChunkSize = int(*chunkSize)
+		if len(metadata) > 0 {
+			ow.Metadata = metadata
+		}
 		defer ow.Close()
 
 		var w io.Writer
