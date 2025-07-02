@@ -67,13 +67,21 @@ Options:
     Disk limit (default 50g)
   -gc int
     Garbage collection interval
+  -gcs-meta string
+    Metadata (comma separated key=value pairs)
   -gzip-ext string
     Comma-separated list of file extensions to gzip before uploading
   -n int
     Number of goroutines for uploading (default 24)
+  -old-windows
+    Enable old windows compatibility mode
+  -skip-top
+    Skip top-level directory in archive
   -tmp-dir string
     Temporary directory
   -v Show verbose output
+  -with-meta
+    Include metadata files (like .DS_Store, __MACOSX, etc.)
 ```
 
 ## License
