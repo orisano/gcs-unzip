@@ -5,7 +5,7 @@ go 1.26.2
 require (
 	cloud.google.com/go/storage v1.63.0
 	github.com/bodgit/sevenzip v1.6.4
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.19.0
 	golang.org/x/sync v0.21.0
 	golang.org/x/text v0.38.0
 )
@@ -21,7 +21,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.33.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.57.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/bodgit/plumbing v1.3.0 // indirect
 	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -58,11 +58,11 @@ require (
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/api v0.286.0 // indirect
-	google.golang.org/genproto v0.0.0-20260622175928-b703f567277d // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260622175928-b703f567277d // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
-	google.golang.org/grpc v1.81.1 // indirect
+	google.golang.org/api v0.287.0 // indirect
+	google.golang.org/genproto v0.0.0-20260630182238-925bb5da69e7 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260630182238-925bb5da69e7 // indirect
+	google.golang.org/grpc v1.82.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
